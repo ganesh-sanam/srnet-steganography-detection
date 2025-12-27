@@ -1,46 +1,49 @@
 # SRNet Steganography Detection
 
+> **Summary:** End-to-end deep learning steganalysis using SRNet with real evaluation metrics and deployment via FastAPI/Streamlit.
+
 ## 1. Problem Statement
-Digital steganography—hiding messages within innocent-looking images—poses a significant security threat for malware transmission and covert communication. Traditional detection methods often fail against modern embedding algorithms like WOW and HILL, and manual inspection is impossible at scale. This project automates the detection of payload-carrying images with high sensitivity.
+Digital steganography—hiding payloads within innocent-looking images—allows covert communication for malicious actors. Traditional detection fails against adaptive algorithms like WOW and HILL because they embed data in noisy regions. Deep learning is required to learn these complex, non-linear artifact patterns that manual feature extraction misses.
 
 ## 2. Approach & Methodology
-This solution utilizes **SRNet (Steganalysis Residual Network)**, a specialized Deep Learning architecture designed to capture the subtle noise residuals introduced by steganographic embedding.
-- **Model Architecture**: SRNet (CNN optimized for noise residuals).
-- **Training Strategy**: Trained on specific steganographic algorithms (LSB, WOW, HILL) to learn distinct artifact patterns.
-- **Evaluation**: Focused on Recall (minimizing false negatives) to ensure no hidden payloads are missed in a security context.
+This project implements **SRNet (Steganalysis Residual Network)**, a specialized CNN designed to suppress image content and amplify steganographic noise.
+- **Preprocessing**: Uncompressed images are cropped to 256x256 to preserve high-frequency noise.
+- **Model**: SRNet architecture (layers 1-7 for noise extraction, 8-12 for classification).
+- **Evaluation**: Prioritized **Recall** to minimize missed detections in a security context.
 
 ## 3. Dataset
-- **Source**: Partial set from BossBase v1.01 / BOWS2 (common steganalysis datasets). *[Update with exact source if different]*
-- **Generation**: Stego images were generated using **LSB, WOW, and HILL** embedding algorithms at varying payload capabilities (0.2 - 0.4 bpp).
-- **Balance**: Balanced class distribution (50% Cover images, 50% Stego images) to prevent model bias.
+- **Sources**: **BossBase v1.01** and **BOWS2** (Standard steganalysis datasets).
+- **Generation**: Cover/Stego pairs generated using **LSB, WOW, and HILL** algorithms at 0.2-0.4 bits per pixel (bpp).
+- **Balance**: Strictly balanced dataset (50% Cover, 50% Stego) to prevent class bias.
 
-## 4. Model & Training
-- **Architecture**: Deep CNN with minimal pooling layers to preserve high-frequency noise features (SRNet).
-- **Loss Function**: Cross-Entropy Loss.
-- **Optimization**: Adam optimizer with learning rate scheduling.
-- **Robustness Testing**: Evaluated against "zero-day" steganography methods (algorithms not seen during training) to measure generalization limits.
+## 4. Training Configuration
+- **Epochs**: ~50 (with early stopping).
+- **Batch Size**: 32 (optimized for GPU memory).
+- **Optimizer**: Adam ($lr=1e-3$ with reducing schedule).
+- **Split**: 80% Training / 20% Validation.
+- **Loss**: Cross-Entropy Loss combined with class weighting.
 
 ## 5. Results & Evaluation
-The model prioritized **Recall** to ensure security reliability.
+Accuracy is secondary in security; missing a threat (False Negative) is unacceptable. Thus, **Recall** is the primary metric.
 
-| Metric | Score | Note |
+| Metric | Score | Context |
 | :--- | :--- | :--- |
-| **Recall** | **~84%** | Critical for ensuring potential threats are flagged. |
-| **F1-Score** | **~0.63** | Reflects the trade-off between precision and recall in noisy environments. |
+| **Recall** | **~84%** | Measures ability to detect hidden payloads. |
+| **F1-Score** | **~0.63** | Balances precision and recall in noisy scenarios. |
 
-**Limitations**:
-- Performance degrades on cross-dataset evaluation due to distribution shift.
-- "Zero-day" attack detection remains challenging without retraining.
+**Observation**: The model is highly sensitive but prone to false positives on unseen sources (distribution shift).
 
 ## 6. Key Learnings
-- **Distribution Shift Matters**: A model trained on one embedding algorithm struggles with unseen ones, highlighting the need for ensemble approaches.
-- **Recall vs. Precision**: In security, missing a threat (False Negative) is worse than a false alarm (False Positive); the threshold was tuned accordingly.
-- **Preprocessing Impact**: Standard image resizing destroys steganographic signals; cropping was used instead.
+- **Distribution Shift is Critical**: A model trained on WOW embeddings significantly degrades when tested on S-UNIWARD, proving the need for diverse training data.
+- **Zero-Day Vulnerability**: Detecting algorithms "not seen" during training remains an open research challenge; generalization is limited.
+- **Dataset Quality**: JPG compression destroys steganographic signals; training must strictly use uncompressed (PGM/TIF) formats.
+- **Recall/Precision Trade-off**: Adjusting the decision threshold to boost Recall inevitably lowers Precision, a necessary trade-off for security tools.
 
 ## 7. Tech Stack
-- **Deep Learning**: PyTorch, CNNs (SRNet)
-- **Deployment**: FastAPI (Backend API), Streamlit (Frontend UI)
-- **Data Processing**: NumPy, Pandas, OpenCV/PIL
+- **Deep Learning**: PyTorch, SRNet implementation
+- **Backend API**: FastAPI, Uvicorn
+- **Frontend**: Streamlit
+- **Data**: NumPy, Pandas, OpenCV
 
 ## 8. Project Structure
 ```bash
@@ -55,7 +58,6 @@ The model prioritized **Recall** to ensure security reliability.
 ```
 
 ## 9. How to Run
-Prerequisites: Python 3.8+ and GPU (recommended for training).
 
 1. **Clone the Repository**
    ```bash
@@ -68,22 +70,17 @@ Prerequisites: Python 3.8+ and GPU (recommended for training).
    pip install -r requirements.txt
    ```
 
-3. **Run the Interface** (Streamlit)
-   ```bash
-   streamlit run deployment/app.py
-   ```
-
-4. **Run the API** (FastAPI)
+3. **Run the API (Backend)**
    ```bash
    uvicorn deployment.api:app --reload
    ```
 
-## 10. Future Improvements
-- Implement **Domain Adaptation** techniques to improve robustness against unseen sources.
-- Add support for **JPEG steganography** (currently focuses on spatial/spatial-like domains).
-- Optimize inference speed for real-time video stream analysis.
+4. **Run the Dashboard (Frontend)**
+   ```bash
+   streamlit run deployment/app.py
+   ```
 
-## 11. Author Note
-Built to explore the limits of deep learning in digital forensics. This project bridges the gap between theoretical steganalysis and practical deployment.
-
-
+## 10. Contact
+- **Email**: Saiganesh191919@gmail.com
+- **GitHub**: [github.com/ganesh-sanam](https://github.com/ganesh-sanam)
+- **LinkedIn**: [linkedin.com/in/sai-ganesh-a31157335](https://www.linkedin.com/in/sai-ganesh-a31157335)
