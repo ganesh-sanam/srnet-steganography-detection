@@ -1,84 +1,84 @@
 # SRNet Steganography Detection
 
-> **Summary:** End-to-end deep learning steganalysis using SRNet with real evaluation metrics and deployment via FastAPI/Streamlit.
+**End-to-end deep learning steganalysis pipeline using SRNet to detect hidden payloads in digital images, prioritizing recall for security.**
 
 ## 1. Problem Statement
-Digital steganography—hiding payloads within innocent-looking images—allows covert communication for malicious actors. Traditional detection fails against adaptive algorithms like WOW and HILL because they embed data in noisy regions. Deep learning is required to learn these complex, non-linear artifact patterns that manual feature extraction misses.
+Digital steganography allows malicious actors to covertly transmit malware or data by hiding it within innocent-looking images. Traditional steganalysis fails against modern adaptive algorithms (like WOW and HILL) that hide data in noisy image regions. This project utilizes deep learning (SRNet) to learn these complex, non-linear noise artifacts that standard tools miss.
 
 ## 2. Approach & Methodology
-This project implements **SRNet (Steganalysis Residual Network)**, a specialized CNN designed to suppress image content and amplify steganographic noise.
-- **Preprocessing**: Uncompressed images are cropped to 256x256 to preserve high-frequency noise.
-- **Model**: SRNet architecture (layers 1-7 for noise extraction, 8-12 for classification).
-- **Evaluation**: Prioritized **Recall** to minimize missed detections in a security context.
+We implemented **SRNet (Steganalysis Residual Network)**, a specialized CNN architecture designed to suppress image content and amplify steganographic noise residuals.
+- **Preprocessing**: High-frequency feature extraction via residual layers (layers 1-7).
+- **Classification**: Deep classifier (layers 8-12) to distinguish Cover vs. Stego.
+- **Evaluation Strategy**: Prioritized **Recall** (Sensitivity) to minimize False Negatives, ensuring potential threats are flagged.
 
 ## 3. Dataset
-- **Sources**: **BossBase v1.01** and **BOWS2** (Standard steganalysis datasets).
-- **Generation**: Cover/Stego pairs generated using **LSB, WOW, and HILL** algorithms at 0.2-0.4 bits per pixel (bpp).
-- **Balance**: Strictly balanced dataset (50% Cover, 50% Stego) to prevent class bias.
+To ensure realistic evaluation, we used industry-standard sourced datasets:
+- **Sources**: **BossBase v1.01** and **BOWS2** (Standard steganalysis benchmarks).
+- **Generation Method**: created 50% Stego images using **LSB, WOW, and HILL** algorithms at payloads of 0.2–0.4 bits per pixel (bpp).
+- **Input**: 256x256 grayscale images (cropped from raw uncompressed sources).
+- **Class Balance**: Strictly balanced **50% Cover / 50% Stego** to prevent model bias.
 
 ## 4. Training Configuration
-- **Epochs**: ~50 (with early stopping).
-- **Batch Size**: 32 (optimized for GPU memory).
-- **Optimizer**: Adam ($lr=1e-3$ with reducing schedule).
-- **Split**: 80% Training / 20% Validation.
-- **Loss**: Cross-Entropy Loss combined with class weighting.
+- **Epochs**: 50 (with Early Stopping)
+- **Batch Size**: 32
+- **Optimizer**: Adam ($lr=1e-3$ -> $1e-5$ schedule)
+- **Loss Function**: Weighted Cross-Entropy Loss
+- **Split**: 80% Training / 20% Validation
 
 ## 5. Results & Evaluation
-Accuracy is secondary in security; missing a threat (False Negative) is unacceptable. Thus, **Recall** is the primary metric.
+We prioritized detecting threats (Recall) over excluding safe images (Precision).
 
-| Metric | Score | Context |
+| Metric | Score | Why it matters |
 | :--- | :--- | :--- |
-| **Recall** | **~84%** | Measures ability to detect hidden payloads. |
-| **F1-Score** | **~0.63** | Balances precision and recall in noisy scenarios. |
-
-**Observation**: The model is highly sensitive but prone to false positives on unseen sources (distribution shift).
+| **Recall** | **~84%** | Critical: Ensuring we catch ~84% of all hidden payloads. |
+| **F1-Score** | **~0.63** | Balances the inevitable increase in false positives when maximizing recall. |
+| **Accuracy** | *Secondary* | Less relevant in security contexts where missed detections are costly. |
 
 ## 6. Key Learnings
-- **Distribution Shift is Critical**: A model trained on WOW embeddings significantly degrades when tested on S-UNIWARD, proving the need for diverse training data.
-- **Zero-Day Vulnerability**: Detecting algorithms "not seen" during training remains an open research challenge; generalization is limited.
-- **Dataset Quality**: JPG compression destroys steganographic signals; training must strictly use uncompressed (PGM/TIF) formats.
-- **Recall/Precision Trade-off**: Adjusting the decision threshold to boost Recall inevitably lowers Precision, a necessary trade-off for security tools.
+- **Distribution Shift**: Models trained on one algorithm (e.g., WOW) struggle to detect others (e.g., HILL) without retraining, highlighting the need for ensemble generalizers.
+- **Dataset Quality**: Standard JPEG compression destroys steganographic artifacts; training must strictly use uncompressed (PGM/TIFF) formats.
+- **Zero-Day Attacks**: Generalization to completely unseen steganography methods remains the biggest challenge in the field.
 
 ## 7. Tech Stack
-- **Deep Learning**: PyTorch, SRNet implementation
-- **Backend API**: FastAPI, Uvicorn
+- **Deep Learning**: PyTorch, SRNet
+- **Backend**: FastAPI, Uvicorn
 - **Frontend**: Streamlit
-- **Data**: NumPy, Pandas, OpenCV
+- **Tools**: OpenCV, NumPy, Pandas
 
 ## 8. Project Structure
 ```bash
-├── data/               # Scripts for dataset generation (cover/stego pairs)
-├── models/             # SRNet architecture definition
-├── training/           # Training loops and validation scripts
+├── data/               # Dataset generation scripts (matlab/python)
+├── models/             # SRNet PyTorch definition
+├── training/           # Train/Val loops
 ├── deployment/
-│   ├── api.py          # FastAPI backend
-│   └── app.py          # Streamlit dashboard
-├── requirements.txt    # Project dependencies
+│   ├── api.py          # FastAPI service
+│   └── app.py          # Streamlit UI
+├── requirements.txt    # Python dependencies
 └── README.md
 ```
 
 ## 9. How to Run
 
-1. **Clone the Repository**
-   ```bash
-   git clone [Your Repository URL]
-   cd SRNet-Steganography
-   ```
+**Step 1: Clone the Repository**
+```bash
+git clone [Your Repository URL]
+cd SRNet-Steganography
+```
 
-2. **Install Dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+**Step 2: Install Dependencies**
+```bash
+pip install -r requirements.txt
+```
 
-3. **Run the API (Backend)**
-   ```bash
-   uvicorn deployment.api:app --reload
-   ```
+**Step 3: Run the Backend API**
+```bash
+uvicorn deployment.api:app --reload
+```
 
-4. **Run the Dashboard (Frontend)**
-   ```bash
-   streamlit run deployment/app.py
-   ```
+**Step 4: Run the Frontend Dashboard** (in a new terminal)
+```bash
+streamlit run deployment/app.py
+```
 
 ## 10. Contact
 - **Email**: Saiganesh191919@gmail.com
